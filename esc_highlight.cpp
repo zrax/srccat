@@ -83,7 +83,7 @@ void EscCodeHighlighter::highlightFile(QTextStream &in, bool numberLines)
         m_line = in.readLine();
         if (numberLines) {
             QString nu = QString::number(++line);
-            m_output << "\033[" << lineNuColor << "m";
+            m_output << "\033[7;" << lineNuColor << "m";
             m_output << nu.rightJustified(7) << " \033[0m";
         }
         state = highlightLine(m_line, state);
