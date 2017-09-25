@@ -17,6 +17,7 @@
 
 #include "esc_color.h"
 
+#include <array>
 #include <cmath>
 
 const EscPalette *EscPalette::Palette8()
@@ -484,6 +485,13 @@ QByteArray EscPalette::background(const QColor &color) const
     return closestColor.m_backFormat;
 }
 
+std::array<qreal, 3> hsl_space(const QColor &color)
+{
+    qreal h, s, l;
+    color.getHslF(&h, &s, &l);
+    return {h, s, l};
+};
+
 EscPalette::KDNode *EscPalette::build_kdtree(QVector<ColorCode> colors, int depth)
 {
     // TODO: Consider LAB space instead of RGB/HSL/HSV
@@ -491,16 +499,7 @@ EscPalette::KDNode *EscPalette::build_kdtree(QVector<ColorCode> colors, int dept
     int axis = depth % 3;
     std::sort(colors.begin(), colors.end(),
               [axis](const ColorCode &l, const ColorCode &r) {
-                  switch (axis) {
-                  case 0:
-                      return l.m_color.hslHue() < r.m_color.hslHue();
-                  case 1:
-                      return l.m_color.hslSaturation() < r.m_color.hslSaturation();
-                  case 2:
-                      return l.m_color.lightness() < r.m_color.lightness();
-                  default:
-                      Q_ASSERT(false);
-                  }
+                  return hsl_space(l.m_color)[axis] < hsl_space(r.m_color)[axis];
               });
 
     int median = colors.size() / 2;
@@ -517,12 +516,12 @@ void EscPalette::compile(const QVector<ColorCode> &colors)
     m_state = _Compiled;
 }
 
-static double color_dist(const QColor &src, const QColor &dest)
+static qreal color_dist(const QColor &src, const QColor &dest)
 {
-    const double hue_dist = src.hslHue() - dest.hslHue();
-    const double sat_dist = src.hslSaturation() - dest.hslSaturation();
-    const double light_dist = src.lightness() - dest.lightness();
-    return std::hypot(std::hypot(hue_dist, sat_dist), light_dist);
+    const auto src_hsl = hsl_space(src);
+    const auto dest_hsl = hsl_space(dest);
+    return std::hypot(std::hypot(src_hsl[0] - dest_hsl[0], src_hsl[1] - dest_hsl[1]),
+                      src_hsl[2] - dest_hsl[2]);
 }
 
 EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
@@ -530,20 +529,23 @@ EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
     // TODO: Consider LAB space instead of RGB/HSL/HSV
 
     KDNode *closest = m_colorTree;
+    qreal closestDist = color_dist(ref, closest->m_color.m_color);
     for ( ;; ) {
-        const double dist = color_dist(ref, closest->m_color.m_color);
-        const double leftDist = closest->m_left
-                                ? color_dist(ref, closest->m_left->m_color.m_color)
+        const qreal leftDist = closest->m_left
+                               ? color_dist(ref, closest->m_left->m_color.m_color)
+                               : INFINITY;
+        const qreal rightDist = closest->m_right
+                                ? color_dist(ref, closest->m_right->m_color.m_color)
                                 : INFINITY;
-        const double rightDist = closest->m_right
-                                 ? color_dist(ref, closest->m_right->m_color.m_color)
-                                 : INFINITY;
-        if (leftDist < dist)
+        if (leftDist < closestDist) {
             closest = closest->m_left;
-        else if (rightDist < dist)
+            closestDist = leftDist;
+        } else if (rightDist < closestDist) {
             closest = closest->m_right;
-        else
+            closestDist = rightDist;
+        } else {
             break;
+        }
     }
     return closest->m_color;
 }
