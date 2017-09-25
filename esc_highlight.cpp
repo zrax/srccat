@@ -20,7 +20,6 @@
 #include <KSyntaxHighlighting/Format>
 #include <KSyntaxHighlighting/Theme>
 #include <KSyntaxHighlighting/State>
-#include <QFile>
 
 EscCodeHighlighter::EscCodeHighlighter()
     : m_output(stdout), m_palette()
@@ -71,19 +70,12 @@ void EscCodeHighlighter::applyFormat(int offset, int length,
     m_output << "\033[0m";
 }
 
-bool EscCodeHighlighter::highlightFile(const QString &filename)
+void EscCodeHighlighter::highlightFile(QTextStream &in)
 {
-    QFile in(filename);
-    if (!in.open(QIODevice::ReadOnly))
-        return false;
-
-    QTextStream inText(&in);
     KSyntaxHighlighting::State state;
-    while (!inText.atEnd()) {
-        m_line = inText.readLine();
+    while (!in.atEnd()) {
+        m_line = in.readLine();
         state = highlightLine(m_line, state);
         m_output << "\n";
     }
-
-    return true;
 }

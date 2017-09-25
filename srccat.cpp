@@ -58,6 +58,8 @@ const EscPalette *detect_palette()
     }
 }
 
+#define trMain(text) QCoreApplication::translate("main", text)
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -65,28 +67,28 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(QStringLiteral("1.0"));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QCoreApplication::translate("main", "Syntax highlighting cat tool"));
+    parser.setApplicationDescription(trMain("Syntax highlighting cat tool"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument(QStringLiteral("filename [...]"),
-            QCoreApplication::translate("main", "File(s) to output, or '-' for stdin"));
+            trMain("File(s) to output, or '-' for stdin"));
     QCommandLineOption optNumberLines(QStringList{"n", "number"},
-            QCoreApplication::translate("main", "Number source lines"));
+            trMain("Number source lines"));
     QCommandLineOption optDark(QStringList{"k", "dark"},
-            QCoreApplication::translate("main", "Use default dark theme"));
+            trMain("Use default dark theme"));
     QCommandLineOption optTheme(QStringList{"T", "theme"},
-            QCoreApplication::translate("main", "Set theme by name (overrides --dark)"),
-            QCoreApplication::translate("main", "theme"));
+            trMain("Set theme by name (overrides --dark)"),
+            trMain("theme"));
     QCommandLineOption optSyntax(QStringList{"S", "syntax"},
-            QCoreApplication::translate("main", "Set syntax defition (default = auto detect)"),
-            QCoreApplication::translate("main", "lang"));
+            trMain("Set syntax defition (default = auto detect)"),
+            trMain("lang"));
     QCommandLineOption optColors(QStringList{"C", "colors"},
-            QCoreApplication::translate("main", "Supported colors (8, 16, 88, 256, true, auto)"),
-            QCoreApplication::translate("main", "colors"));
+            trMain("Supported colors (8, 16, 88, 256, true, auto)"),
+            trMain("colors"));
     QCommandLineOption optListThemes("theme-list",
-            QCoreApplication::translate("main", "List all supported themes"));
+            trMain("List all supported themes"));
     QCommandLineOption optListSyntax("syntax-list",
-            QCoreApplication::translate("main", "List all supported syntax definitions"));
+            trMain("List all supported syntax definitions"));
     parser.addOption(optNumberLines);
     parser.addOption(optDark);
     parser.addOption(optTheme);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
     const QStringList files = parser.positionalArguments();
 
     if (parser.isSet(optListThemes)) {
-        puts(QCoreApplication::translate("main", "Supported themes:").toLocal8Bit().constData());
+        puts(trMain("Supported themes:").toLocal8Bit().constData());
         auto sortedThemes = syntax_repo()->themes();
         std::sort(sortedThemes.begin(), sortedThemes.end(),
                   [](const KSyntaxHighlighting::Theme &l,
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
         ::exit(0);
     }
     if (parser.isSet(optListSyntax)) {
-        puts(QCoreApplication::translate("main", "Supported Syntax Definitions:").toLocal8Bit().constData());
+        puts(trMain("Supported Syntax Definitions:").toLocal8Bit().constData());
         auto sortedDefs = syntax_repo()->definitions();
         std::sort(sortedDefs.begin(), sortedDefs.end(),
                   [](const KSyntaxHighlighting::Definition &l,
@@ -151,8 +153,11 @@ int main(int argc, char *argv[])
         else if (colorType == "256")
             palette = EscPalette::Palette256();
         else {
-            fprintf(stderr, "Invalid color option: %s\n", colorType.toLocal8Bit().constData());
-            fputs("Supported values are: 8, 16, 88, 256, true, auto\n", stderr);
+            fprintf(stderr,
+                    trMain("Invalid color option: %s\n").toLocal8Bit().constData(),
+                    colorType.toLocal8Bit().constData());
+            fputs(trMain("Supported values are: 8, 16, 88, 256, true, auto\n").toLocal8Bit().constData(),
+                  stderr);
             return 1;
         }
     } else {
@@ -167,7 +172,19 @@ int main(int argc, char *argv[])
         if (!parser.isSet(optSyntax))
             highlighter.setDefinition(syntax_repo()->definitionForFileName(file));
 
-        highlighter.highlightFile(file);
+        if (file == "-") {
+            QTextStream stream(stdin);
+            highlighter.highlightFile(stream);
+        } else {
+            QFile in(file);
+            if (in.open(QIODevice::ReadOnly)) {
+                QTextStream stream(&in);
+                highlighter.highlightFile(stream);
+            } else {
+                fprintf(stderr, trMain("Could not open %s for reading\n").toLocal8Bit().constData(),
+                        file.toLocal8Bit().constData());
+            }
+        }
     }
 
     return 0;

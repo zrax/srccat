@@ -32,7 +32,7 @@ public:
 
     void applyFormat(int offset, int length, const KSyntaxHighlighting::Format &format) Q_DECL_OVERRIDE;
 
-    bool highlightFile(const QString &filename);
+    void highlightFile(QTextStream &in);
 
 private:
     const EscPalette *m_palette;
