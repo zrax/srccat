@@ -174,12 +174,12 @@ int main(int argc, char *argv[])
 
         if (file == "-") {
             QTextStream stream(stdin);
-            highlighter.highlightFile(stream);
+            highlighter.highlightFile(stream, parser.isSet(optNumberLines));
         } else {
             QFile in(file);
             if (in.open(QIODevice::ReadOnly)) {
                 QTextStream stream(&in);
-                highlighter.highlightFile(stream);
+                highlighter.highlightFile(stream, parser.isSet(optNumberLines));
             } else {
                 fprintf(stderr, trMain("Could not open %s for reading\n").toLocal8Bit().constData(),
                         file.toLocal8Bit().constData());

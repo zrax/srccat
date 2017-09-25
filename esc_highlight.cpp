@@ -39,7 +39,7 @@ void EscCodeHighlighter::applyFormat(int offset, int length,
     if (length == 0)
         return;
 
-    KSyntaxHighlighting::Theme currentTheme = theme();
+    const KSyntaxHighlighting::Theme currentTheme = theme();
     if (format.isDefaultTextStyle(currentTheme)) {
         m_output << m_line.mid(offset, length);
         return;
@@ -70,11 +70,22 @@ void EscCodeHighlighter::applyFormat(int offset, int length,
     m_output << "\033[0m";
 }
 
-void EscCodeHighlighter::highlightFile(QTextStream &in)
+void EscCodeHighlighter::highlightFile(QTextStream &in, bool numberLines)
 {
     KSyntaxHighlighting::State state;
+    int line = 0;
+
+    const KSyntaxHighlighting::Theme currentTheme = theme();
+    const QByteArray lineNuColor = m_palette->foreground(
+            currentTheme.editorColor(KSyntaxHighlighting::Theme::LineNumbers));
+
     while (!in.atEnd()) {
         m_line = in.readLine();
+        if (numberLines) {
+            QString nu = QString::number(++line);
+            m_output << "\033[" << lineNuColor << "m";
+            m_output << nu.rightJustified(7) << " \033[0m";
+        }
         state = highlightLine(m_line, state);
         m_output << "\n";
     }
