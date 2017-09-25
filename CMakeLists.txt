@@ -35,3 +35,5 @@ set(srccat_HEADERS
 
 add_executable(srccat ${srccat_SOURCES} ${srccat_HEADERS})
 target_link_libraries(srccat Qt5::Core KF5::SyntaxHighlighting)
+
+install(TARGETS srccat RUNTIME DESTINATION bin)
