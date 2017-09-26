@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     parser.setApplicationDescription(trMain("Syntax highlighting cat tool"));
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addPositionalArgument(QStringLiteral("filename [...]"),
+    parser.addPositionalArgument(trMain("filename [...]"),
             trMain("File(s) to output, or '-' for stdin"));
     QCommandLineOption optNumberLines(QStringList{"n", "number"},
             trMain("Number source lines"));

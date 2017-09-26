@@ -485,17 +485,23 @@ QByteArray EscPalette::background(const QColor &color) const
     return closestColor.m_backFormat;
 }
 
-std::array<qreal, 3> hsl_space(const QColor &color)
+static std::array<qreal, 3> hsl_space(const QColor &color)
 {
     qreal h, s, l;
     color.getHslF(&h, &s, &l);
+    if (h < -0.99) {
+        // Qt returns -1.0 for anything along the grayscale spectrum, and
+        // [0,1) for non-gray values... In order to make grayish colors less
+        // likely to show up as random reds and browns, we move it closer to
+        // the rest of the color space.
+        h = -0.3;
+    }
+
     return {h, s, l};
 };
 
 EscPalette::KDNode *EscPalette::build_kdtree(QVector<ColorCode> colors, int depth)
 {
-    // TODO: Consider LAB space instead of RGB/HSL/HSV
-
     int axis = depth % 3;
     std::sort(colors.begin(), colors.end(),
               [axis](const ColorCode &l, const ColorCode &r) {
@@ -526,8 +532,6 @@ static qreal color_dist(const QColor &src, const QColor &dest)
 
 EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
 {
-    // TODO: Consider LAB space instead of RGB/HSL/HSV
-
     KDNode *closest = m_colorTree;
     qreal closestDist = color_dist(ref, closest->m_color.m_color);
     for ( ;; ) {

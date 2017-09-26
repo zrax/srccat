@@ -75,16 +75,11 @@ void EscCodeHighlighter::highlightFile(QTextStream &in, bool numberLines)
     KSyntaxHighlighting::State state;
     int line = 0;
 
-    const KSyntaxHighlighting::Theme currentTheme = theme();
-    const QByteArray lineNuColor = m_palette->foreground(
-            currentTheme.editorColor(KSyntaxHighlighting::Theme::LineNumbers));
-
     while (!in.atEnd()) {
         m_line = in.readLine();
         if (numberLines) {
             QString nu = QString::number(++line);
-            m_output << "\033[7;" << lineNuColor << "m";
-            m_output << nu.rightJustified(7) << " \033[0m";
+            m_output << "\033[7;37m" << nu.rightJustified(7) << " \033[0m";
         }
         state = highlightLine(m_line, state);
         m_output << "\n";
