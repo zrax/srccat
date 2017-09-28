@@ -501,58 +501,32 @@ static std::array<qreal, 3> hsl_space(const QColor &color)
     const qreal y = s * std::sin(2.0 * h * M_PI);
     const qreal z = (2.0 * l) - 1.0;
     return {x, y, z};
-};
-
-EscPalette::KDNode *EscPalette::build_kdtree(QVector<ColorCode> colors, int depth)
-{
-    int axis = depth % 3;
-    std::sort(colors.begin(), colors.end(),
-              [axis](const ColorCode &l, const ColorCode &r) {
-                  return hsl_space(l.m_color)[axis] < hsl_space(r.m_color)[axis];
-              });
-
-    int median = colors.size() / 2;
-    return new KDNode{
-        colors.at(median),
-        (median > 0) ? build_kdtree(colors.mid(0, median), depth + 1) : nullptr,
-        (colors.size() > median + 1) ? build_kdtree(colors.mid(median + 1), depth + 1) : nullptr
-    };
 }
 
 void EscPalette::compile(const QVector<ColorCode> &colors)
 {
-    m_colorTree = build_kdtree(colors);
+    m_colors = colors;
     m_state = _Compiled;
 }
 
 static qreal color_dist(const QColor &src, const QColor &dest)
 {
-    const auto src_hsl = hsl_space(src);
-    const auto dest_hsl = hsl_space(dest);
-    return std::hypot(std::hypot(src_hsl[0] - dest_hsl[0], src_hsl[1] - dest_hsl[1]),
-                      src_hsl[2] - dest_hsl[2]);
+    const auto src_pt = hsl_space(src);
+    const auto dest_pt = hsl_space(dest);
+    return std::hypot(std::hypot(src_pt[0] - dest_pt[0], src_pt[1] - dest_pt[1]),
+                      src_pt[2] - dest_pt[2]);
 }
 
 EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
 {
-    KDNode *closest = m_colorTree;
-    qreal closestDist = color_dist(ref, closest->m_color.m_color);
-    for ( ;; ) {
-        const qreal leftDist = closest->m_left
-                               ? color_dist(ref, closest->m_left->m_color.m_color)
-                               : INFINITY;
-        const qreal rightDist = closest->m_right
-                                ? color_dist(ref, closest->m_right->m_color.m_color)
-                                : INFINITY;
-        if (leftDist < closestDist) {
-            closest = closest->m_left;
-            closestDist = leftDist;
-        } else if (rightDist < closestDist) {
-            closest = closest->m_right;
-            closestDist = rightDist;
-        } else {
-            break;
+    qreal closestDist = INFINITY;
+    int closest = -1;
+    for (int i = 0; i < m_colors.size(); ++i) {
+        qreal dist = color_dist(ref, m_colors[i].m_color);
+        if (dist < closestDist) {
+            closest = i;
+            closestDist = dist;
         }
     }
-    return closest->m_color;
+    return m_colors[closest];
 }

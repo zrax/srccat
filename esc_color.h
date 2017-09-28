@@ -48,15 +48,8 @@ private:
         QByteArray m_foreFormat;
         QByteArray m_backFormat;
     };
-    struct KDNode
-    {
-        ColorCode m_color;
-        KDNode *m_left;
-        KDNode *m_right;
-    };
-    KDNode *m_colorTree;
+    QVector<ColorCode> m_colors;
 
-    static KDNode *build_kdtree(QVector<ColorCode> colors, int depth = 0);
     bool isCompiled() const { return m_state != _Initializing; }
     void compile(const QVector<ColorCode> &colors);
 
