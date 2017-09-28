@@ -567,7 +567,7 @@ static qreal color_dist(const QColor &src, const QColor &dest)
 
 EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
 {
-    qreal closestDist = INFINITY;
+    qreal closestDist = std::numeric_limits<qreal>::infinity();
     int closest = -1;
     for (int i = 0; i < m_colors.size(); ++i) {
         qreal dist = color_dist(ref, m_colors[i].m_color);
