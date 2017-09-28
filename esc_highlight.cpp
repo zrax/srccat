@@ -28,9 +28,11 @@ EscCodeHighlighter::EscCodeHighlighter()
 
 static void add_code(QByteArray &fmtStart, const char *code)
 {
-    if (!fmtStart.endsWith('['))
-        fmtStart.append(';');
-    fmtStart.append(code);
+    if (code && code[0]) {
+        if (!fmtStart.endsWith('['))
+            fmtStart.append(';');
+        fmtStart.append(code);
+    }
 }
 
 void EscCodeHighlighter::applyFormat(int offset, int length,
