@@ -494,10 +494,13 @@ static std::array<qreal, 3> hsl_space(const QColor &color)
         // [0,1) for non-gray values... In order to make grayish colors less
         // likely to show up as random reds and browns, we move it closer to
         // the rest of the color space.
-        h = -0.3;
+        h = 0;
     }
 
-    return {h, s, l};
+    const qreal x = s * std::cos(2.0 * h * M_PI);
+    const qreal y = s * std::sin(2.0 * h * M_PI);
+    const qreal z = (2.0 * l) - 1.0;
+    return {x, y, z};
 };
 
 EscPalette::KDNode *EscPalette::build_kdtree(QVector<ColorCode> colors, int depth)
