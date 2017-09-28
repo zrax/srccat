@@ -485,6 +485,12 @@ QByteArray EscPalette::background(const QColor &color) const
     return closestColor.m_backFormat;
 }
 
+/* HSL space seems to give "good enough" results with minimal performance
+ * impact.  However, I left the others in here in case someone wants to
+ * experiment with lookups in other color spaces for whatever reason.
+ */
+#define lookup_space hsl_space
+
 static std::array<qreal, 3> hsl_space(const QColor &color)
 {
     qreal h, s, l;
@@ -503,6 +509,48 @@ static std::array<qreal, 3> hsl_space(const QColor &color)
     return {x, y, z};
 }
 
+static std::array<qreal, 3> rgb_space(const QColor &color)
+{
+    qreal r, g, b;
+    color.getRgbF(&r, &g, &b);
+    return {r, g, b};
+}
+
+static std::array<qreal, 3> xyz_space(const QColor &color)
+{
+    auto rgb = rgb_space(color);
+    for (size_t c = 0; c < rgb.size(); ++c) {
+        if (rgb[c] > 0.04045)
+            rgb[c] = std::pow((rgb[c] + 0.055) / 1.055, 2.4);
+        else
+            rgb[c] /= 12.92;
+        rgb[c] *= 100.0;
+    }
+
+    return { rgb[0] * 0.4124 + rgb[1] * 0.3576 + rgb[2] * 0.1805,
+             rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722,
+             rgb[0] * 0.0193 + rgb[1] * 0.1192 + rgb[2] * 0.9505 };
+};
+
+static std::array<qreal, 3> lab_space(const QColor &color)
+{
+    auto xyz = xyz_space(color);
+    xyz[0] /=  95.047;
+    xyz[1] /= 100.000;
+    xyz[2] /= 108.883;
+
+    for (size_t c = 0; c < xyz.size(); ++c) {
+        if (xyz[c] > 0.008856)
+            xyz[c] = std::pow(xyz[c], 1.0/3.0);
+        else
+            xyz[c] = (7.787 * xyz[c]) + (16.0/116.0);
+    }
+
+    return { (116.0 * xyz[1]) - 16.0,
+             500.0 * (xyz[0] - xyz[1]),
+             200.0 * (xyz[1] - xyz[2]) };
+}
+
 void EscPalette::compile(const QVector<ColorCode> &colors)
 {
     m_colors = colors;
@@ -511,8 +559,8 @@ void EscPalette::compile(const QVector<ColorCode> &colors)
 
 static qreal color_dist(const QColor &src, const QColor &dest)
 {
-    const auto src_pt = hsl_space(src);
-    const auto dest_pt = hsl_space(dest);
+    const auto src_pt = lookup_space(src);
+    const auto dest_pt = lookup_space(dest);
     return std::hypot(std::hypot(src_pt[0] - dest_pt[0], src_pt[1] - dest_pt[1]),
                       src_pt[2] - dest_pt[2]);
 }
