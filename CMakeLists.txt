@@ -19,6 +19,10 @@ project(srccat)
 
 set(CMAKE_CXX_STANDARD 11)
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_ID MATCHES ".*Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+endif()
+
 find_package(Qt5Core REQUIRED)
 find_package(KF5SyntaxHighlighting REQUIRED)
 

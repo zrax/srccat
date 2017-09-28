@@ -22,7 +22,7 @@
 #include <KSyntaxHighlighting/State>
 
 EscCodeHighlighter::EscCodeHighlighter()
-    : m_output(stdout), m_palette()
+    : m_palette(), m_output(stdout)
 {
 }
 
