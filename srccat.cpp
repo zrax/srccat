@@ -26,13 +26,13 @@
 #include <QCommandLineParser>
 #include <KF5/KSyntaxHighlighting/SyntaxHighlighter>
 
-KSyntaxHighlighting::Repository *syntax_repo()
+static KSyntaxHighlighting::Repository *syntax_repo()
 {
     static KSyntaxHighlighting::Repository s_repo;
     return &s_repo;
 }
 
-const EscPalette *detect_palette()
+static const EscPalette *detect_palette()
 {
     // This is far from perfect, especially since so many terminals
     // (intentionally) lie about what they are
@@ -58,6 +58,17 @@ const EscPalette *detect_palette()
     }
 }
 
+static bool environ_to_bool(const char *varName)
+{
+    if (qEnvironmentVariableIsEmpty(varName))
+        return false;
+
+    const auto value = qgetenv(varName).toUpper();
+    if (value == "0" || value == "F" || value == "FALSE")
+        return false;
+    return true;
+}
+
 #define trMain(text) QCoreApplication::translate("main", text)
 
 int main(int argc, char *argv[])
@@ -76,8 +87,10 @@ int main(int argc, char *argv[])
             trMain("Number source lines"));
     QCommandLineOption optDark(QStringList{"k", "dark"},
             trMain("Use default dark theme"));
+    QCommandLineOption optLight(QStringList{"L", "light"},
+            trMain("Use default light theme (default)"));
     QCommandLineOption optTheme(QStringList{"T", "theme"},
-            trMain("Set theme by name (overrides --dark)"),
+            trMain("Set theme by name (overrides --dark and --light)"),
             trMain("theme"));
     QCommandLineOption optSyntax(QStringList{"S", "syntax"},
             trMain("Set syntax defition (default = auto detect)"),
@@ -91,6 +104,7 @@ int main(int argc, char *argv[])
             trMain("List all supported syntax definitions"));
     parser.addOption(optNumberLines);
     parser.addOption(optDark);
+    parser.addOption(optLight);
     parser.addOption(optTheme);
     parser.addOption(optSyntax);
     parser.addOption(optColors);
@@ -130,10 +144,15 @@ int main(int argc, char *argv[])
     KSyntaxHighlighting::Theme theme;
     if (parser.isSet(optTheme))
         theme = syntax_repo()->theme(parser.value(optTheme));
+    if (!theme.isValid() && qEnvironmentVariableIsSet("SRCCAT_THEME")) {
+        const auto themeName = qgetenv("SRCCAT_THEME");
+        theme = syntax_repo()->theme(QString::fromUtf8(themeName));
+    }
     if (!theme.isValid()) {
-        theme = syntax_repo()->defaultTheme(
-                parser.isSet(optDark) ? KSyntaxHighlighting::Repository::DarkTheme
-                                      : KSyntaxHighlighting::Repository::LightTheme);
+        auto defaultTheme = KSyntaxHighlighting::Repository::LightTheme;
+        if (parser.isSet(optDark) || (environ_to_bool("SRCCAT_DARK") && !parser.isSet(optLight)))
+            defaultTheme = KSyntaxHighlighting::Repository::DarkTheme;
+        theme = syntax_repo()->defaultTheme(defaultTheme);
     }
     highlighter.setTheme(theme);
 
@@ -168,18 +187,20 @@ int main(int argc, char *argv[])
     if (parser.isSet(optSyntax))
         highlighter.setDefinition(syntax_repo()->definitionForName(parser.value(optSyntax)));
 
+    const bool numberLines = parser.isSet(optNumberLines) || environ_to_bool("SRCCAT_NUMBER");
+
     for (const QString &file : files) {
         if (!parser.isSet(optSyntax))
             highlighter.setDefinition(syntax_repo()->definitionForFileName(file));
 
         if (file == "-") {
             QTextStream stream(stdin);
-            highlighter.highlightFile(stream, parser.isSet(optNumberLines));
+            highlighter.highlightFile(stream, numberLines);
         } else {
             QFile in(file);
             if (in.open(QIODevice::ReadOnly)) {
                 QTextStream stream(&in);
-                highlighter.highlightFile(stream, parser.isSet(optNumberLines));
+                highlighter.highlightFile(stream, numberLines);
             } else {
                 fprintf(stderr, trMain("Could not open %s for reading\n").toLocal8Bit().constData(),
                         file.toLocal8Bit().constData());
