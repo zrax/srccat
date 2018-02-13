@@ -23,8 +23,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 endif()
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 find_package(Qt5Core REQUIRED)
 find_package(KF5SyntaxHighlighting REQUIRED)
+find_package(Magic REQUIRED)
 
 set(srccat_SOURCES
     srccat.cpp
@@ -37,7 +40,9 @@ set(srccat_HEADERS
     esc_color.h
 )
 
+include_directories(${Magic_INCLUDE_DIR})
+
 add_executable(srccat ${srccat_SOURCES} ${srccat_HEADERS})
-target_link_libraries(srccat Qt5::Core KF5::SyntaxHighlighting)
+target_link_libraries(srccat Qt5::Core KF5::SyntaxHighlighting ${Magic_LIBRARY})
 
 install(TARGETS srccat RUNTIME DESTINATION bin)

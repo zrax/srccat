@@ -20,11 +20,25 @@
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/Theme>
 #include <KSyntaxHighlighting/Definition>
+#include <KSyntaxHighlighting/SyntaxHighlighter>
 
 #include <QCoreApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
-#include <KF5/KSyntaxHighlighting/SyntaxHighlighter>
+
+#include <magic.h>
+
+struct magic_t_RAII
+{
+    magic_t m_magic;
+
+    magic_t_RAII(magic_t magic) : m_magic(magic) { }
+    ~magic_t_RAII() { magic_close(m_magic); }
+
+    operator magic_t() { return m_magic; }
+    bool operator!() const { return !m_magic; }
+};
+
 
 static KSyntaxHighlighting::Repository *syntax_repo()
 {
@@ -56,6 +70,76 @@ static const EscPalette *detect_palette()
         // well enough for most (known) terminals not handled above
         return EscPalette::Palette256();
     }
+}
+
+static QString detect_mime_type(const QString &filename)
+{
+    magic_t_RAII magic = magic_open(MAGIC_MIME_TYPE | MAGIC_SYMLINK);
+    if (!magic) {
+        qDebug("Could not initialize libmagic");
+        return QString::null;
+    }
+
+    if (magic_load(magic, Q_NULLPTR) < 0) {
+        qDebug("Could not load magic database: %s", magic_error(magic));
+        return QString::null;
+    }
+
+    const QByteArray filenameEncoded = QFile::encodeName(filename);
+    const char *mime = magic_file(magic, filenameEncoded.constData());
+    if (!mime) {
+        qDebug("Could not get MIME type from libmagic: %s", magic_error(magic));
+        return QString::null;
+    }
+    return QString::fromLatin1(mime);
+}
+
+static KSyntaxHighlighting::Definition detect_highlighter_mime(const QString &filename)
+{
+    using KSyntaxHighlighting::Definition;
+
+    const QString mime = detect_mime_type(filename);
+    if (mime == QStringLiteral("text/plain"))
+        return Definition();
+
+    const QStringList mimeParts = mime.split(QLatin1Char('/'));
+    if (mimeParts.size() == 0 || mimeParts.last().isEmpty())
+        return Definition();
+
+    QVector<Definition> candidates;
+    for (const auto &def : syntax_repo()->definitions()) {
+        for (const auto &matchType : def.mimeTypes()) {
+            // Only compare the second part, to avoid missing matches due to
+            // disagreement about whether XML markup should be text/xml or
+            // application/xml (for example)
+            const QStringList matchParts = matchType.split(QLatin1Char('/'));
+            if (matchParts.last().compare(mimeParts.last(), Qt::CaseInsensitive) == 0) {
+                candidates.append(def);
+                break;
+            }
+        }
+    }
+
+    if (candidates.isEmpty())
+        return Definition();
+
+    std::partial_sort(candidates.begin(), candidates.begin() + 1, candidates.end(),
+                      [](const Definition &left, const Definition &right) {
+        return left.priority() > right.priority();
+    });
+
+    return candidates.first();
+}
+
+static KSyntaxHighlighting::Definition detect_highlighter(const QString &filename)
+{
+    // If libmagic finds a match, it's probably more likely to be correct
+    // than the filename match, which is easily fooled
+    // (e.g. idle3.6 is not a Troff Mandoc file)
+    auto definition = detect_highlighter_mime(filename);
+    if (definition.isValid())
+        return definition;
+    return syntax_repo()->definitionForFileName(filename);
 }
 
 static bool environ_to_bool(const char *varName)
@@ -191,7 +275,7 @@ int main(int argc, char *argv[])
 
     for (const QString &file : files) {
         if (!parser.isSet(optSyntax))
-            highlighter.setDefinition(syntax_repo()->definitionForFileName(file));
+            highlighter.setDefinition(detect_highlighter(file));
 
         if (file == "-") {
             QTextStream stream(stdin);
