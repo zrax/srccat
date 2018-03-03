@@ -15,29 +15,31 @@
  * along with srccat.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ESC_HIGHLIGHT_H
-#define _ESC_HIGHLIGHT_H
+#ifndef _PAGER_H
+#define _PAGER_H
 
-#include "esc_color.h"
+#include <QIODevice>
+#include <QProcessEnvironment>
 
-#include <KSyntaxHighlighting/AbstractHighlighter>
-#include <QTextStream>
-
-class EscCodeHighlighter : public KSyntaxHighlighting::AbstractHighlighter
+class PagerProcess : public QIODevice
 {
 public:
-    explicit EscCodeHighlighter(QTextStream &output);
+    PagerProcess() : m_pid(), m_stdin() { }
 
-    void setPalette(const EscPalette *pal) { m_palette = pal; }
+    bool start(const QStringList &command, const QProcessEnvironment &env);
+    int exec();
 
-    void applyFormat(int offset, int length, const KSyntaxHighlighting::Format &format) Q_DECL_OVERRIDE;
+    void close() Q_DECL_OVERRIDE;
 
-    void highlightFile(QTextStream &in, bool numberLines);
+    static PagerProcess *create();
+
+protected:
+    qint64 readData(char *data, qint64 maxSize) Q_DECL_OVERRIDE;
+    qint64 writeData(const char *data, qint64 maxSize) Q_DECL_OVERRIDE;
 
 private:
-    const EscPalette *m_palette;
-    QTextStream &m_output;
-    QString m_line;
+    pid_t m_pid;
+    int m_stdin;
 };
 
-#endif
+#endif // _PAGER_H

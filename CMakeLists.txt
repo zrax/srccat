@@ -40,6 +40,11 @@ set(srccat_HEADERS
     esc_color.h
 )
 
+if(NOT WIN32)
+    set(srccat_SOURCES ${srccat_SOURCES} pager.cpp)
+    set(srccat_HEADERS ${srccat_HEADERS} pager.h)
+endif()
+
 include_directories(${Magic_INCLUDE_DIR})
 
 add_executable(srccat ${srccat_SOURCES} ${srccat_HEADERS})

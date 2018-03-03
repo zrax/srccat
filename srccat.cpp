@@ -17,6 +17,10 @@
 
 #include "esc_highlight.h"
 
+#ifndef Q_OS_WIN
+#include "pager.h"
+#endif
+
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/Theme>
 #include <KSyntaxHighlighting/Definition>
@@ -167,6 +171,10 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.addPositionalArgument(trMain("filename [...]"),
             trMain("File(s) to output, or '-' for stdin"));
+#ifndef Q_OS_WIN
+    QCommandLineOption optPager(QStringList{"p", "pager"},
+            trMain("Pipe output through $PAGER (or \"less\" if unset)"));
+#endif
     QCommandLineOption optNumberLines(QStringList{"n", "number"},
             trMain("Number source lines"));
     QCommandLineOption optDark(QStringList{"k", "dark"},
@@ -186,6 +194,9 @@ int main(int argc, char *argv[])
             trMain("List all supported themes"));
     QCommandLineOption optListSyntax("syntax-list",
             trMain("List all supported syntax definitions"));
+#ifndef Q_OS_WIN
+    parser.addOption(optPager);
+#endif
     parser.addOption(optNumberLines);
     parser.addOption(optDark);
     parser.addOption(optLight);
@@ -223,7 +234,24 @@ int main(int argc, char *argv[])
         ::exit(0);
     }
 
-    EscCodeHighlighter highlighter;
+#ifndef Q_OS_WIN
+    // Needs to be declared before outputStream, so that outputStream gets
+    // deleted before pagerProcess in case there is any lingering output
+    std::unique_ptr<PagerProcess> pagerProcess;
+#endif
+    std::unique_ptr<QTextStream> outputStream;
+
+#ifndef Q_OS_WIN
+    if (parser.isSet(optPager) || !qEnvironmentVariableIsEmpty("SRCCAT_PAGER")) {
+        pagerProcess.reset(PagerProcess::create());
+        if (pagerProcess)
+            outputStream.reset(new QTextStream(pagerProcess.get()));
+    }
+#endif
+    if (!outputStream)
+        outputStream.reset(new QTextStream(stdout));
+
+    EscCodeHighlighter highlighter(*outputStream);
 
     KSyntaxHighlighting::Theme theme;
     if (parser.isSet(optTheme))
@@ -291,6 +319,9 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    if (pagerProcess)
+        return pagerProcess->exec();
 
     return 0;
 }

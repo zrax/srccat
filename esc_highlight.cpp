@@ -21,8 +21,8 @@
 #include <KSyntaxHighlighting/Theme>
 #include <KSyntaxHighlighting/State>
 
-EscCodeHighlighter::EscCodeHighlighter()
-    : m_palette(), m_output(stdout)
+EscCodeHighlighter::EscCodeHighlighter(QTextStream &output)
+    : m_palette(), m_output(output)
 {
 }
 
@@ -86,4 +86,6 @@ void EscCodeHighlighter::highlightFile(QTextStream &in, bool numberLines)
         state = highlightLine(m_line, state);
         m_output << "\n";
     }
+
+    m_output.flush();
 }
