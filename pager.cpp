@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <cstdlib>
 #include <cstdio>
 
 /* QProcess has no way of spawning a child that we can write to but does not
@@ -56,14 +57,10 @@ bool PagerProcess::start(const QStringList &command, const QProcessEnvironment &
             cargv.push_back(strdup(arg.toLocal8Bit().constData()));
         cargv.push_back(Q_NULLPTR);
 
-        QStringList envList = env.toStringList();
-        std::vector<char *> cenv;
-        cenv.reserve(envList.size() + 1);
         for (const auto &var : env.toStringList())
-            cenv.push_back(strdup(var.toLocal8Bit().constData()));
-        cenv.push_back(Q_NULLPTR);
+            putenv(strdup(var.toLocal8Bit().constData()));
 
-        execvpe(cargv[0], cargv.data(), cenv.data());
+        execvp(cargv[0], cargv.data());
         perror("execl");
         exit(1);
     } else {
