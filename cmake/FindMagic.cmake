@@ -25,4 +25,14 @@ mark_as_advanced(Magic_INCLUDE_DIR Magic_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Magic
-    REQUIRED_VARS Magic_INCLUDE_DIR Magic_LIBRARY)
+    REQUIRED_VARS Magic_INCLUDE_DIR Magic_LIBRARY
+)
+
+if(Magic_FOUND AND NOT TARGET Magic::Magic)
+    add_library(Magic::Magic UNKNOWN IMPORTED)
+    set_target_properties(Magic::Magic PROPERTIES
+        IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+        IMPORTED_LOCATION "${Magic_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${Magic_INCLUDE_DIR}"
+    )
+endif()

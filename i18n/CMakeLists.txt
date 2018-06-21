@@ -35,7 +35,8 @@ qt5_create_translation(srccat_LUPDATE ${srccat_TS_SOURCES} ${srccat_TRANSLATIONS
 add_custom_target(lupdate DEPENDS ${srccat_LUPDATE})
 
 qt5_add_translation(srccat_QM ${srccat_TRANSLATIONS})
-add_custom_target(translations ALL DEPENDS ${srccat_QM})
+add_custom_target(translations DEPENDS ${srccat_QM})
+add_dependencies(srccat translations)
 
 configure_file(srccat_i18n.qrc.in srccat_i18n.qrc COPYONLY)
 target_sources(srccat PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/srccat_i18n.qrc")

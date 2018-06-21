@@ -17,13 +17,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(srccat)
 
-set(CMAKE_CXX_STANDARD 11)
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_ID MATCHES ".*Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-endif()
-
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(Qt5Core REQUIRED)
 find_package(Qt5LinguistTools)
@@ -48,10 +42,25 @@ if(NOT WIN32)
     set(srccat_HEADERS ${srccat_HEADERS} pager.h)
 endif()
 
-include_directories(${Magic_INCLUDE_DIR})
+add_executable(srccat "")
+target_sources(srccat PRIVATE ${srccat_SOURCES} ${srccat_HEADERS})
+target_link_libraries(srccat
+    PRIVATE Qt5::Core KF5::SyntaxHighlighting Magic::Magic
+)
 
-add_executable(srccat ${srccat_SOURCES} ${srccat_HEADERS})
-target_link_libraries(srccat Qt5::Core KF5::SyntaxHighlighting ${Magic_LIBRARY})
+target_compile_options(srccat PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
+    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra>
+    $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra>
+)
+
+target_compile_features(srccat PRIVATE
+    cxx_auto_type
+    cxx_generalized_initializers
+    cxx_lambdas
+    cxx_range_for
+    cxx_uniform_initialization
+)
 
 if(Qt5LinguistTools_FOUND)
     add_subdirectory(i18n)
