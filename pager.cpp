@@ -33,7 +33,7 @@ bool PagerProcess::start(const QStringList &command, const QProcessEnvironment &
 {
     int stdin_pipe[2];
     if (pipe(stdin_pipe) < 0) {
-        perror("Failed to open process pipe");
+        perror(QObject::tr("Failed to open process pipe").toLocal8Bit().constData());
         return false;
     }
 

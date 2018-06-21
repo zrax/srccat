@@ -29,6 +29,8 @@
 #include <QCoreApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QTranslator>
+#include <QLibraryInfo>
 
 #include <magic.h>
 
@@ -80,19 +82,22 @@ static QString detect_mime_type(const QString &filename)
 {
     magic_t_RAII magic = magic_open(MAGIC_MIME_TYPE | MAGIC_SYMLINK);
     if (!magic) {
-        qDebug("Could not initialize libmagic");
+        fputs(QObject::tr("Could not initialize libmagic").toLocal8Bit().constData(),
+              stderr);
         return QString::null;
     }
 
     if (magic_load(magic, Q_NULLPTR) < 0) {
-        qDebug("Could not load magic database: %s", magic_error(magic));
+        fputs(QObject::tr("Could not load magic database: %1")
+                   .arg(magic_error(magic)).toLocal8Bit().constData(), stderr);
         return QString::null;
     }
 
     const QByteArray filenameEncoded = QFile::encodeName(filename);
     const char *mime = magic_file(magic, filenameEncoded.constData());
     if (!mime) {
-        qDebug("Could not get MIME type from libmagic: %s", magic_error(magic));
+        fputs(QObject::tr("Could not get MIME type from libmagic: %1")
+                   .arg(magic_error(magic)).toLocal8Bit().constData(), stderr);
         return QString::null;
     }
     return QString::fromLatin1(mime);
@@ -107,7 +112,7 @@ static KSyntaxHighlighting::Definition detect_highlighter_mime(const QString &fi
         return Definition();
 
     const QStringList mimeParts = mime.split(QLatin1Char('/'));
-    if (mimeParts.size() == 0 || mimeParts.last().isEmpty())
+    if (mimeParts.isEmpty() || mimeParts.last().isEmpty())
         return Definition();
 
     QVector<Definition> candidates;
@@ -157,43 +162,51 @@ static bool environ_to_bool(const char *varName)
     return true;
 }
 
-#define trMain(text) QCoreApplication::translate("main", text)
-
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("srccat"));
-    app.setApplicationVersion(QStringLiteral("1.0"));
+    QCoreApplication::setApplicationName(QStringLiteral("srccat"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("1.0"));
+
+    QLocale defaultLocale;
+    QTranslator qt_translator;
+    qt_translator.load(defaultLocale, QStringLiteral("qt"), QStringLiteral("_"),
+                       QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    QCoreApplication::installTranslator(&qt_translator);
+
+    QTranslator translator;
+    translator.load(defaultLocale, QStringLiteral(":/srccat"), QStringLiteral("_"));
+    QCoreApplication::installTranslator(&translator);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(trMain("Syntax highlighting cat tool"));
+    parser.setApplicationDescription(QObject::tr("Syntax highlighting cat tool"));
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addPositionalArgument(trMain("filename [...]"),
-            trMain("File(s) to output, or '-' for stdin"));
+    parser.addPositionalArgument(QObject::tr("filename [...]"),
+            QObject::tr("File(s) to output, or '-' for stdin"));
 #ifndef Q_OS_WIN
     QCommandLineOption optPager(QStringList{"p", "pager"},
-            trMain("Pipe output through $PAGER (or \"less\" if unset)"));
+            QObject::tr("Pipe output through $PAGER (or \"less\" if unset)"));
 #endif
     QCommandLineOption optNumberLines(QStringList{"n", "number"},
-            trMain("Number source lines"));
+            QObject::tr("Number source lines"));
     QCommandLineOption optDark(QStringList{"k", "dark"},
-            trMain("Use default dark theme"));
+            QObject::tr("Use default dark theme"));
     QCommandLineOption optLight(QStringList{"L", "light"},
-            trMain("Use default light theme (default)"));
+            QObject::tr("Use default light theme (default)"));
     QCommandLineOption optTheme(QStringList{"T", "theme"},
-            trMain("Set theme by name (overrides --dark and --light)"),
-            trMain("theme"));
+            QObject::tr("Set theme by name (overrides --dark and --light)"),
+            QObject::tr("theme"));
     QCommandLineOption optSyntax(QStringList{"S", "syntax"},
-            trMain("Set syntax defition (default = auto detect)"),
-            trMain("lang"));
+            QObject::tr("Set syntax defition (default = auto detect)"),
+            QObject::tr("lang"));
     QCommandLineOption optColors(QStringList{"C", "colors"},
-            trMain("Supported colors (8, 16, 88, 256, true, auto)"),
-            trMain("colors"));
+            QObject::tr("Supported colors (8, 16, 88, 256, true, auto)"),
+            QObject::tr("colors"));
     QCommandLineOption optListThemes("theme-list",
-            trMain("List all supported themes"));
+            QObject::tr("List all supported themes"));
     QCommandLineOption optListSyntax("syntax-list",
-            trMain("List all supported syntax definitions"));
+            QObject::tr("List all supported syntax definitions"));
 #ifndef Q_OS_WIN
     parser.addOption(optPager);
 #endif
@@ -210,7 +223,7 @@ int main(int argc, char *argv[])
     const QStringList files = parser.positionalArguments();
 
     if (parser.isSet(optListThemes)) {
-        puts(trMain("Supported themes:").toLocal8Bit().constData());
+        puts(QObject::tr("Supported themes:").toLocal8Bit().constData());
         auto sortedThemes = syntax_repo()->themes();
         std::sort(sortedThemes.begin(), sortedThemes.end(),
                   [](const KSyntaxHighlighting::Theme &l,
@@ -222,7 +235,7 @@ int main(int argc, char *argv[])
         ::exit(0);
     }
     if (parser.isSet(optListSyntax)) {
-        puts(trMain("Supported Syntax Definitions:").toLocal8Bit().constData());
+        puts(QObject::tr("Supported Syntax Definitions:").toLocal8Bit().constData());
         auto sortedDefs = syntax_repo()->definitions();
         std::sort(sortedDefs.begin(), sortedDefs.end(),
                   [](const KSyntaxHighlighting::Definition &l,
@@ -284,11 +297,10 @@ int main(int argc, char *argv[])
         else if (colorType == "256")
             palette = EscPalette::Palette256();
         else {
-            fprintf(stderr,
-                    trMain("Invalid color option: %s\n").toLocal8Bit().constData(),
-                    colorType.toLocal8Bit().constData());
-            fputs(trMain("Supported values are: 8, 16, 88, 256, true, auto\n").toLocal8Bit().constData(),
-                  stderr);
+            fputs(QObject::tr("Invalid color option: %1\n")
+                      .arg(colorType).toLocal8Bit().constData(), stderr);
+            fputs(QObject::tr("Supported values are: 8, 16, 88, 256, true, auto\n")
+                      .toLocal8Bit().constData(), stderr);
             return 1;
         }
     } else {
@@ -314,8 +326,8 @@ int main(int argc, char *argv[])
                 QTextStream stream(&in);
                 highlighter.highlightFile(stream, numberLines);
             } else {
-                fprintf(stderr, trMain("Could not open %s for reading\n").toLocal8Bit().constData(),
-                        file.toLocal8Bit().constData());
+                fputs(QObject::tr("Could not open %1 for reading\n").arg(file)
+                          .toLocal8Bit().constData(), stderr);
             }
         }
     }

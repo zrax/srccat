@@ -26,8 +26,11 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Qt5Core REQUIRED)
+find_package(Qt5LinguistTools)
 find_package(KF5SyntaxHighlighting REQUIRED)
 find_package(Magic REQUIRED)
+
+set(CMAKE_AUTORCC ON)
 
 set(srccat_SOURCES
     srccat.cpp
@@ -49,5 +52,9 @@ include_directories(${Magic_INCLUDE_DIR})
 
 add_executable(srccat ${srccat_SOURCES} ${srccat_HEADERS})
 target_link_libraries(srccat Qt5::Core KF5::SyntaxHighlighting ${Magic_LIBRARY})
+
+if(Qt5LinguistTools_FOUND)
+    add_subdirectory(i18n)
+endif()
 
 install(TARGETS srccat RUNTIME DESTINATION bin)
