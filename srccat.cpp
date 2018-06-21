@@ -332,8 +332,10 @@ int main(int argc, char *argv[])
         }
     }
 
+#ifndef Q_OS_WIN
     if (pagerProcess)
         return pagerProcess->exec();
+#endif
 
     return 0;
 }
