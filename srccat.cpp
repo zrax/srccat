@@ -82,22 +82,22 @@ static QString detect_mime_type(const QString &filename)
 {
     magic_t_RAII magic = magic_open(MAGIC_MIME_TYPE | MAGIC_SYMLINK);
     if (!magic) {
-        fputs(QObject::tr("Could not initialize libmagic").toLocal8Bit().constData(),
+        fputs(qPrintable(QObject::tr("Could not initialize libmagic\n")),
               stderr);
         return QString::null;
     }
 
     if (magic_load(magic, Q_NULLPTR) < 0) {
-        fputs(QObject::tr("Could not load magic database: %1")
-                   .arg(magic_error(magic)).toLocal8Bit().constData(), stderr);
+        fputs(qPrintable(QObject::tr("Could not load magic database: %1\n")
+                           .arg(magic_error(magic))), stderr);
         return QString::null;
     }
 
     const QByteArray filenameEncoded = QFile::encodeName(filename);
     const char *mime = magic_file(magic, filenameEncoded.constData());
     if (!mime) {
-        fputs(QObject::tr("Could not get MIME type from libmagic: %1")
-                   .arg(magic_error(magic)).toLocal8Bit().constData(), stderr);
+        fputs(qPrintable(QObject::tr("Could not get MIME type from libmagic: %1\n")
+                           .arg(magic_error(magic))), stderr);
         return QString::null;
     }
     return QString::fromLatin1(mime);
@@ -180,8 +180,8 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QObject::tr("Syntax highlighting cat tool"));
-    parser.addHelpOption();
-    parser.addVersionOption();
+    auto optHelp = parser.addHelpOption();
+    auto optVersion = parser.addVersionOption();
     parser.addPositionalArgument(QObject::tr("filename [...]"),
             QObject::tr("File(s) to output, or '-' for stdin"));
 #ifndef Q_OS_WIN
@@ -219,11 +219,27 @@ int main(int argc, char *argv[])
     parser.addOption(optListThemes);
     parser.addOption(optListSyntax);
 
-    parser.process(app);
+    if (!parser.parse(QCoreApplication::arguments())) {
+        fprintf(stderr, "%s\n", qPrintable(parser.errorText()));
+        ::exit(1);
+    }
+    if (parser.isSet(optVersion))
+        parser.showVersion();
+    if (parser.isSet(optHelp)) {
+        printf("%s\n", qPrintable(parser.helpText()));
+        puts(qPrintable(QObject::tr("Environment Variables:")));
+        puts(qPrintable(QObject::tr("  SRCCAT_DARK            1 = Use the dark theme (-k) by default")));
+        puts(qPrintable(QObject::tr("  SRCCAT_NUMBER          1 = Enable line numbering (-n) by default")));
+        puts(qPrintable(QObject::tr("  SRCCAT_PAGER           <path> = Set a pager program (overriding $PAGER)\n"
+                                    "                         and enable it (-p) by default")));
+        puts(qPrintable(QObject::tr("  SRCCAT_THEME           <name> = Set a default theme (-T <name>)")));
+        ::exit(0);
+    }
+
     const QStringList files = parser.positionalArguments();
 
     if (parser.isSet(optListThemes)) {
-        puts(QObject::tr("Supported themes:").toLocal8Bit().constData());
+        puts(qPrintable(QObject::tr("Supported themes:")));
         auto sortedThemes = syntax_repo()->themes();
         std::sort(sortedThemes.begin(), sortedThemes.end(),
                   [](const KSyntaxHighlighting::Theme &l,
@@ -231,11 +247,11 @@ int main(int argc, char *argv[])
                       return QString::compare(l.name(), r.name(), Qt::CaseInsensitive) < 0;
                   });
         for (const auto &theme : sortedThemes)
-            printf("  - %s\n", theme.name().toLocal8Bit().constData());
+            printf("  - %s\n", qPrintable(theme.name()));
         ::exit(0);
     }
     if (parser.isSet(optListSyntax)) {
-        puts(QObject::tr("Supported Syntax Definitions:").toLocal8Bit().constData());
+        puts(qPrintable(QObject::tr("Supported Syntax Definitions:")));
         auto sortedDefs = syntax_repo()->definitions();
         std::sort(sortedDefs.begin(), sortedDefs.end(),
                   [](const KSyntaxHighlighting::Definition &l,
@@ -243,7 +259,7 @@ int main(int argc, char *argv[])
                       return QString::compare(l.name(), r.name(), Qt::CaseInsensitive) < 0;
                   });
         for (const auto &def : sortedDefs)
-            printf("  - %s\n", def.name().toLocal8Bit().constData());
+            printf("  - %s\n", qPrintable(def.name()));
         ::exit(0);
     }
 
@@ -297,10 +313,10 @@ int main(int argc, char *argv[])
         else if (colorType == "256")
             palette = EscPalette::Palette256();
         else {
-            fputs(QObject::tr("Invalid color option: %1\n")
-                      .arg(colorType).toLocal8Bit().constData(), stderr);
-            fputs(QObject::tr("Supported values are: 8, 16, 88, 256, true, auto\n")
-                      .toLocal8Bit().constData(), stderr);
+            fputs(qPrintable(QObject::tr("Invalid color option: %1\n").arg(colorType)),
+                  stderr);
+            fputs(qPrintable(QObject::tr("Supported values are: 8, 16, 88, 256, true, auto\n")),
+                  stderr);
             return 1;
         }
     } else {
@@ -326,8 +342,8 @@ int main(int argc, char *argv[])
                 QTextStream stream(&in);
                 highlighter.highlightFile(stream, numberLines);
             } else {
-                fputs(QObject::tr("Could not open %1 for reading\n").arg(file)
-                          .toLocal8Bit().constData(), stderr);
+                fputs(qPrintable(QObject::tr("Could not open %1 for reading\n").arg(file)),
+                      stderr);
             }
         }
     }
