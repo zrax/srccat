@@ -84,13 +84,13 @@ static QString detect_mime_type(const QString &filename)
     if (!magic) {
         fputs(qPrintable(QObject::tr("Could not initialize libmagic\n")),
               stderr);
-        return QString::null;
+        return QString();
     }
 
     if (magic_load(magic, Q_NULLPTR) < 0) {
         fputs(qPrintable(QObject::tr("Could not load magic database: %1\n")
                            .arg(magic_error(magic))), stderr);
-        return QString::null;
+        return QString();
     }
 
     const QByteArray filenameEncoded = QFile::encodeName(filename);
@@ -98,7 +98,7 @@ static QString detect_mime_type(const QString &filename)
     if (!mime) {
         fputs(qPrintable(QObject::tr("Could not get MIME type from libmagic: %1\n")
                            .arg(magic_error(magic))), stderr);
-        return QString::null;
+        return QString();
     }
     return QString::fromLatin1(mime);
 }
