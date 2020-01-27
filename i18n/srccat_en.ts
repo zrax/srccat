@@ -138,19 +138,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="316"/>
+        <location filename="../srccat.cpp" line="296"/>
         <source>Invalid color option: %1
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="345"/>
+        <location filename="../srccat.cpp" line="347"/>
         <source>Could not open %1 for reading
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="318"/>
+        <location filename="../srccat.cpp" line="298"/>
         <source>Supported values are: 8, 16, 88, 256, true, auto
 </source>
         <translation type="unfinished"></translation>

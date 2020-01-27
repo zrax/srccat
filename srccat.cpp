@@ -263,25 +263,6 @@ int main(int argc, char *argv[])
         ::exit(0);
     }
 
-#ifndef Q_OS_WIN
-    // Needs to be declared before outputStream, so that outputStream gets
-    // deleted before pagerProcess in case there is any lingering output
-    std::unique_ptr<PagerProcess> pagerProcess;
-#endif
-    std::unique_ptr<QTextStream> outputStream;
-
-#ifndef Q_OS_WIN
-    if (parser.isSet(optPager) || !qEnvironmentVariableIsEmpty("SRCCAT_PAGER")) {
-        pagerProcess.reset(PagerProcess::create());
-        if (pagerProcess)
-            outputStream.reset(new QTextStream(pagerProcess.get()));
-    }
-#endif
-    if (!outputStream)
-        outputStream.reset(new QTextStream(stdout));
-
-    EscCodeHighlighter highlighter(*outputStream);
-
     KSyntaxHighlighting::Theme theme;
     if (parser.isSet(optTheme))
         theme = syntax_repo()->theme(parser.value(optTheme));
@@ -295,7 +276,6 @@ int main(int argc, char *argv[])
             defaultTheme = KSyntaxHighlighting::Repository::DarkTheme;
         theme = syntax_repo()->defaultTheme(defaultTheme);
     }
-    highlighter.setTheme(theme);
 
     const EscPalette *palette;
     if (parser.isSet(optColors)) {
@@ -322,12 +302,34 @@ int main(int argc, char *argv[])
     } else {
         palette = detect_palette();
     }
+
+#ifndef Q_OS_WIN
+    // Needs to be declared before outputStream, so that outputStream gets
+    // deleted before pagerProcess in case there is any lingering output
+    std::unique_ptr<PagerProcess> pagerProcess;
+#endif
+    std::unique_ptr<QTextStream> outputStream;
+
+#ifndef Q_OS_WIN
+    if (parser.isSet(optPager) || !qEnvironmentVariableIsEmpty("SRCCAT_PAGER")) {
+        pagerProcess.reset(PagerProcess::create());
+        if (pagerProcess)
+            outputStream.reset(new QTextStream(pagerProcess.get()));
+    }
+#endif
+    if (!outputStream)
+        outputStream.reset(new QTextStream(stdout));
+
+    EscCodeHighlighter highlighter(*outputStream);
+    highlighter.setTheme(theme);
     highlighter.setPalette(palette);
 
     if (parser.isSet(optSyntax))
         highlighter.setDefinition(syntax_repo()->definitionForName(parser.value(optSyntax)));
 
     const bool numberLines = parser.isSet(optNumberLines) || environ_to_bool("SRCCAT_NUMBER");
+
+    int exitStatus = 0;
 
     for (const QString &file : files) {
         if (!parser.isSet(optSyntax))
@@ -344,14 +346,18 @@ int main(int argc, char *argv[])
             } else {
                 fputs(qPrintable(QObject::tr("Could not open %1 for reading\n").arg(file)),
                       stderr);
+                exitStatus = 1;
             }
         }
     }
 
 #ifndef Q_OS_WIN
-    if (pagerProcess)
-        return pagerProcess->exec();
+    if (pagerProcess) {
+        int pagerStatus = pagerProcess->exec();
+        if (pagerStatus != 0)
+            exitStatus = pagerStatus;
+    }
 #endif
 
-    return 0;
+    return exitStatus;
 }
