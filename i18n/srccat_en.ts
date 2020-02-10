@@ -9,148 +9,130 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="85"/>
-        <source>Could not initialize libmagic
-</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../srccat.cpp" line="91"/>
-        <source>Could not load magic database: %1
-</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../srccat.cpp" line="99"/>
-        <source>Could not get MIME type from libmagic: %1
-</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../srccat.cpp" line="182"/>
+        <location filename="../srccat.cpp" line="134"/>
         <source>Syntax highlighting cat tool</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="185"/>
+        <location filename="../srccat.cpp" line="137"/>
         <source>filename [...]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="186"/>
+        <location filename="../srccat.cpp" line="138"/>
         <source>File(s) to output, or &apos;-&apos; for stdin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="189"/>
+        <location filename="../srccat.cpp" line="141"/>
         <source>Pipe output through $PAGER (or &quot;less&quot; if unset)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="192"/>
+        <location filename="../srccat.cpp" line="144"/>
         <source>Number source lines</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="194"/>
+        <location filename="../srccat.cpp" line="146"/>
         <source>Use default dark theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="196"/>
+        <location filename="../srccat.cpp" line="148"/>
         <source>Use default light theme (default)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="198"/>
+        <location filename="../srccat.cpp" line="150"/>
         <source>Set theme by name (overrides --dark and --light)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="233"/>
+        <location filename="../srccat.cpp" line="185"/>
         <source>  SRCCAT_PAGER           &lt;path&gt; = Set a pager program (overriding $PAGER)
                          and enable it (-p) by default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="199"/>
+        <location filename="../srccat.cpp" line="151"/>
         <source>theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="201"/>
+        <location filename="../srccat.cpp" line="153"/>
         <source>Set syntax defition (default = auto detect)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="202"/>
+        <location filename="../srccat.cpp" line="154"/>
         <source>lang</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="204"/>
+        <location filename="../srccat.cpp" line="156"/>
         <source>Supported colors (8, 16, 88, 256, true, auto)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="205"/>
+        <location filename="../srccat.cpp" line="157"/>
         <source>colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="207"/>
+        <location filename="../srccat.cpp" line="159"/>
         <source>List all supported themes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="209"/>
+        <location filename="../srccat.cpp" line="161"/>
         <source>List all supported syntax definitions</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="230"/>
+        <location filename="../srccat.cpp" line="182"/>
         <source>Environment Variables:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="231"/>
+        <location filename="../srccat.cpp" line="183"/>
         <source>  SRCCAT_DARK            1 = Use the dark theme (-k) by default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="232"/>
+        <location filename="../srccat.cpp" line="184"/>
         <source>  SRCCAT_NUMBER          1 = Enable line numbering (-n) by default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="235"/>
+        <location filename="../srccat.cpp" line="187"/>
         <source>  SRCCAT_THEME           &lt;name&gt; = Set a default theme (-T &lt;name&gt;)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="242"/>
+        <location filename="../srccat.cpp" line="194"/>
         <source>Supported themes:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="254"/>
+        <location filename="../srccat.cpp" line="206"/>
         <source>Supported Syntax Definitions:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="296"/>
+        <location filename="../srccat.cpp" line="248"/>
         <source>Invalid color option: %1
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="347"/>
+        <location filename="../srccat.cpp" line="299"/>
         <source>Could not open %1 for reading
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../srccat.cpp" line="298"/>
+        <location filename="../srccat.cpp" line="250"/>
         <source>Supported values are: 8, 16, 88, 256, true, auto
 </source>
         <translation type="unfinished"></translation>

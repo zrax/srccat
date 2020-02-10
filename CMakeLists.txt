@@ -22,7 +22,6 @@ list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake")
 find_package(Qt5Core REQUIRED)
 find_package(Qt5LinguistTools)
 find_package(KF5SyntaxHighlighting REQUIRED)
-find_package(Magic REQUIRED)
 
 set(CMAKE_AUTORCC ON)
 
@@ -45,7 +44,7 @@ endif()
 add_executable(srccat "")
 target_sources(srccat PRIVATE ${srccat_SOURCES} ${srccat_HEADERS})
 target_link_libraries(srccat
-    PRIVATE Qt5::Core KF5::SyntaxHighlighting Magic::Magic
+    PRIVATE Qt5::Core KF5::SyntaxHighlighting
 )
 
 target_compile_options(srccat PRIVATE

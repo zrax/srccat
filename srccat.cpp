@@ -29,22 +29,9 @@
 #include <QCoreApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QMimeDatabase>
 #include <QTranslator>
 #include <QLibraryInfo>
-
-#include <magic.h>
-
-struct magic_t_RAII
-{
-    magic_t m_magic;
-
-    magic_t_RAII(magic_t magic) : m_magic(magic) { }
-    ~magic_t_RAII() { magic_close(m_magic); }
-
-    operator magic_t() { return m_magic; }
-    bool operator!() const { return !m_magic; }
-};
-
 
 static KSyntaxHighlighting::Repository *syntax_repo()
 {
@@ -78,71 +65,36 @@ static const EscPalette *detect_palette()
     }
 }
 
-static QString detect_mime_type(const QString &filename)
-{
-    magic_t_RAII magic = magic_open(MAGIC_MIME_TYPE | MAGIC_SYMLINK);
-    if (!magic) {
-        fputs(qPrintable(QObject::tr("Could not initialize libmagic\n")),
-              stderr);
-        return QString();
-    }
-
-    if (magic_load(magic, Q_NULLPTR) < 0) {
-        fputs(qPrintable(QObject::tr("Could not load magic database: %1\n")
-                           .arg(magic_error(magic))), stderr);
-        return QString();
-    }
-
-    const QByteArray filenameEncoded = QFile::encodeName(filename);
-    const char *mime = magic_file(magic, filenameEncoded.constData());
-    if (!mime) {
-        fputs(qPrintable(QObject::tr("Could not get MIME type from libmagic: %1\n")
-                           .arg(magic_error(magic))), stderr);
-        return QString();
-    }
-    return QString::fromLatin1(mime);
-}
-
 static KSyntaxHighlighting::Definition detect_highlighter_mime(const QString &filename)
 {
     using KSyntaxHighlighting::Definition;
 
-    const QString mime = detect_mime_type(filename);
-    if (mime == QStringLiteral("text/plain"))
+    QMimeDatabase mimeDb;
+    const auto &mime = mimeDb.mimeTypeForFile(filename);
+    if (mime.isDefault() || mime.name() == QStringLiteral("text/plain"))
         return Definition();
 
-    const QStringList mimeParts = mime.split(QLatin1Char('/'));
-    if (mimeParts.isEmpty() || mimeParts.last().isEmpty())
-        return Definition();
-
-    QVector<Definition> candidates;
+    Definition matchDef;
+    int matchPriority = std::numeric_limits<int>::min();
     for (const auto &def : syntax_repo()->definitions()) {
+        if (def.priority() < matchPriority)
+            continue;
+
         for (const auto &matchType : def.mimeTypes()) {
-            // Only compare the second part, to avoid missing matches due to
-            // disagreement about whether XML markup should be text/xml or
-            // application/xml (for example)
-            const QStringList matchParts = matchType.split(QLatin1Char('/'));
-            if (matchParts.last().compare(mimeParts.last(), Qt::CaseInsensitive) == 0) {
-                candidates.append(def);
+            if (mime.name() == matchType || mime.aliases().indexOf(matchType) >= 0) {
+                matchDef = def;
+                matchPriority = def.priority();
                 break;
             }
         }
     }
 
-    if (candidates.isEmpty())
-        return Definition();
-
-    std::partial_sort(candidates.begin(), candidates.begin() + 1, candidates.end(),
-                      [](const Definition &left, const Definition &right) {
-        return left.priority() > right.priority();
-    });
-
-    return candidates.first();
+    return matchDef;
 }
 
 static KSyntaxHighlighting::Definition detect_highlighter(const QString &filename)
 {
-    // If libmagic finds a match, it's probably more likely to be correct
+    // If QMimeDatabase finds a match, it's probably more likely to be correct
     // than the filename match, which is easily fooled
     // (e.g. idle3.6 is not a Troff Mandoc file)
     auto definition = detect_highlighter_mime(filename);
