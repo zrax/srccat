@@ -94,13 +94,12 @@ static KSyntaxHighlighting::Definition detect_highlighter_mime(const QString &fi
 
 static KSyntaxHighlighting::Definition detect_highlighter(const QString &filename)
 {
-    // If QMimeDatabase finds a match, it's probably more likely to be correct
-    // than the filename match, which is easily fooled
-    // (e.g. idle3.6 is not a Troff Mandoc file)
-    auto definition = detect_highlighter_mime(filename);
+    auto definition = syntax_repo()->definitionForFileName(filename);
     if (definition.isValid())
         return definition;
-    return syntax_repo()->definitionForFileName(filename);
+
+    qDebug("Asking QMimeDatabase about %s", qPrintable(filename));
+    return detect_highlighter_mime(filename);
 }
 
 static bool environ_to_bool(const char *varName)
