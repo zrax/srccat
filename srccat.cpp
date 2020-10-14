@@ -97,8 +97,6 @@ static KSyntaxHighlighting::Definition detect_highlighter(const QString &filenam
     auto definition = syntax_repo()->definitionForFileName(filename);
     if (definition.isValid())
         return definition;
-
-    qDebug("Asking QMimeDatabase about %s", qPrintable(filename));
     return detect_highlighter_mime(filename);
 }
 
