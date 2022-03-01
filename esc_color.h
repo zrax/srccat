@@ -15,6 +15,9 @@
  * along with srccat.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _ESC_COLOR_H
+#define _ESC_COLOR_H
+
 #include <QByteArray>
 #include <QColor>
 #include <QVector>
@@ -55,3 +58,5 @@ private:
 
     ColorCode findClosest(const QColor &ref) const;
 };
+
+#endif
