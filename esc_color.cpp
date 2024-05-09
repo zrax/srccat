@@ -491,10 +491,36 @@ QByteArray EscPalette::background(const QColor &color) const
  */
 #define lookup_space hsl_space
 
-static std::array<qreal, 3> hsl_space(const QColor &color)
+inline void qcolor_to_hsl(const QColor &color, float &h, float &s, float &l)
 {
-    qreal h, s, l;
+#if QT_VERSION_MAJOR >= 6
     color.getHslF(&h, &s, &l);
+#else
+    qreal h_, s_, l_;
+    color.getHslF(&h_, &s_, &l_);
+    h = static_cast<float>(h_);
+    s = static_cast<float>(s_);
+    l = static_cast<float>(l_);
+#endif
+}
+
+inline void qcolor_to_rgb(const QColor &color, float &r, float &g, float &b)
+{
+#if QT_VERSION_MAJOR >= 6
+    color.getRgbF(&r, &g, &b);
+#else
+    qreal r_, g_, b_;
+    color.getRgbF(&r_, &g_, &b_);
+    r = static_cast<float>(r_);
+    g = static_cast<float>(g_);
+    b = static_cast<float>(b_);
+#endif
+}
+
+static std::array<float, 3> hsl_space(const QColor &color)
+{
+    float h, s, l;
+    qcolor_to_hsl(color, h, s, l);
     if (h < -0.99) {
         // Qt returns -1.0 for anything along the grayscale spectrum, and
         // [0,1) for non-gray values... In order to make grayish colors less
@@ -503,20 +529,20 @@ static std::array<qreal, 3> hsl_space(const QColor &color)
         h = 0;
     }
 
-    const qreal x = s * std::cos(2.0 * h * M_PI);
-    const qreal y = s * std::sin(2.0 * h * M_PI);
-    const qreal z = (2.0 * l) - 1.0;
+    const auto x = s * std::cos(2.0f * h * float(M_PI));
+    const auto y = s * std::sin(2.0f * h * float(M_PI));
+    const auto z = (2.0f * l) - 1.0f;
     return {x, y, z};
 }
 
-static std::array<qreal, 3> rgb_space(const QColor &color)
+static std::array<float, 3> rgb_space(const QColor &color)
 {
-    qreal r, g, b;
-    color.getRgbF(&r, &g, &b);
+    float r, g, b;
+    qcolor_to_rgb(color, r, g, b);
     return {r, g, b};
 }
 
-static std::array<qreal, 3> xyz_space(const QColor &color)
+static std::array<float, 3> xyz_space(const QColor &color)
 {
     auto rgb = rgb_space(color);
     for (size_t c = 0; c < rgb.size(); ++c) {
@@ -527,28 +553,28 @@ static std::array<qreal, 3> xyz_space(const QColor &color)
         rgb[c] *= 100.0;
     }
 
-    return { rgb[0] * 0.4124 + rgb[1] * 0.3576 + rgb[2] * 0.1805,
-             rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722,
-             rgb[0] * 0.0193 + rgb[1] * 0.1192 + rgb[2] * 0.9505 };
+    return { rgb[0] * 0.4124f + rgb[1] * 0.3576f + rgb[2] * 0.1805f,
+             rgb[0] * 0.2126f + rgb[1] * 0.7152f + rgb[2] * 0.0722f,
+             rgb[0] * 0.0193f + rgb[1] * 0.1192f + rgb[2] * 0.9505f };
 };
 
-static std::array<qreal, 3> lab_space(const QColor &color)
+static std::array<float, 3> lab_space(const QColor &color)
 {
     auto xyz = xyz_space(color);
-    xyz[0] /=  95.047;
-    xyz[1] /= 100.000;
-    xyz[2] /= 108.883;
+    xyz[0] /=  95.047f;
+    xyz[1] /= 100.000f;
+    xyz[2] /= 108.883f;
 
     for (size_t c = 0; c < xyz.size(); ++c) {
-        if (xyz[c] > 0.008856)
-            xyz[c] = std::pow(xyz[c], 1.0/3.0);
+        if (xyz[c] > 0.008856f)
+            xyz[c] = std::pow(xyz[c], 1.0f/3.0f);
         else
-            xyz[c] = (7.787 * xyz[c]) + (16.0/116.0);
+            xyz[c] = (7.787f * xyz[c]) + (16.0f/116.0f);
     }
 
-    return { (116.0 * xyz[1]) - 16.0,
-             500.0 * (xyz[0] - xyz[1]),
-             200.0 * (xyz[1] - xyz[2]) };
+    return { (116.0f * xyz[1]) - 16.0f,
+             500.0f * (xyz[0] - xyz[1]),
+             200.0f * (xyz[1] - xyz[2]) };
 }
 
 void EscPalette::compile(const QVector<ColorCode> &colors)
@@ -557,7 +583,7 @@ void EscPalette::compile(const QVector<ColorCode> &colors)
     m_state = _Compiled;
 }
 
-static qreal color_dist(const QColor &src, const QColor &dest)
+static float color_dist(const QColor &src, const QColor &dest)
 {
     const auto src_pt = lookup_space(src);
     const auto dest_pt = lookup_space(dest);
@@ -567,10 +593,10 @@ static qreal color_dist(const QColor &src, const QColor &dest)
 
 EscPalette::ColorCode EscPalette::findClosest(const QColor &ref) const
 {
-    qreal closestDist = std::numeric_limits<qreal>::infinity();
+    float closestDist = std::numeric_limits<float>::infinity();
     int closest = -1;
     for (int i = 0; i < m_colors.size(); ++i) {
-        qreal dist = color_dist(ref, m_colors[i].m_color);
+        float dist = color_dist(ref, m_colors[i].m_color);
         if (dist < closestDist) {
             closest = i;
             closestDist = dist;

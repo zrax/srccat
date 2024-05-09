@@ -32,6 +32,7 @@
 #include <QMimeDatabase>
 #include <QTranslator>
 #include <QLibraryInfo>
+#include <QFile>
 
 static KSyntaxHighlighting::Repository *syntax_repo()
 {
@@ -119,13 +120,20 @@ int main(int argc, char *argv[])
 
     QLocale defaultLocale;
     QTranslator qt_translator;
-    qt_translator.load(defaultLocale, QStringLiteral("qt"), QStringLiteral("_"),
-                       QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-    QCoreApplication::installTranslator(&qt_translator);
+    if (qt_translator.load(defaultLocale, QStringLiteral("qt"), QStringLiteral("_"),
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+                           QLibraryInfo::path(QLibraryInfo::TranslationsPath)
+#else
+                           QLibraryInfo::location(QLibraryInfo::TranslationsPath)
+#endif
+                           ))
+    {
+        QCoreApplication::installTranslator(&qt_translator);
+    }
 
     QTranslator translator;
-    translator.load(defaultLocale, QStringLiteral(":/srccat"), QStringLiteral("_"));
-    QCoreApplication::installTranslator(&translator);
+    if (translator.load(defaultLocale, QStringLiteral(":/srccat"), QStringLiteral("_")))
+        QCoreApplication::installTranslator(&translator);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QObject::tr("Syntax highlighting cat tool"));

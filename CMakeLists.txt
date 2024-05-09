@@ -14,14 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with srccat.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(srccat)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake")
 
-find_package(Qt5Core REQUIRED)
-find_package(Qt5LinguistTools)
-find_package(KF5SyntaxHighlighting REQUIRED)
+if(NOT DEFINED QT_VERSION_MAJOR)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+endif()
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
+             Core LinguistTools)
+find_package(KF${QT_VERSION_MAJOR}SyntaxHighlighting REQUIRED)
 
 set(CMAKE_AUTORCC ON)
 
@@ -44,7 +47,8 @@ endif()
 add_executable(srccat "")
 target_sources(srccat PRIVATE ${srccat_SOURCES} ${srccat_HEADERS})
 target_link_libraries(srccat
-    PRIVATE Qt5::Core KF5::SyntaxHighlighting
+    PRIVATE Qt${QT_VERSION_MAJOR}::Core
+            KF${QT_VERSION_MAJOR}::SyntaxHighlighting
 )
 
 target_compile_options(srccat PRIVATE
